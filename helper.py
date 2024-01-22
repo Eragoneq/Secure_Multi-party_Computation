@@ -76,4 +76,4 @@ def int2dec(integer: int) -> Decimal:
 
 def calculate_poly(f: list[int], x: int) -> int:
     """Calculates the polynomial f(x)."""
-    return sum([f[i] * x ** i for i in range(len(f))])
+    return sum([a_i * (x ** i) for i, a_i in enumerate(f)])

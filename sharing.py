@@ -1,3 +1,5 @@
+import random
+
 import helper
 
 
@@ -11,13 +13,15 @@ class Params:
         """Constructs a new set of parameters."""
 
         print("Generating params...")
+        self.generator = 4
         while True:
-            self.modulo = helper.get_big_prime(kappa)
-            self.generator = 4
-            if helper.is_prime((self.modulo - 1) // 2):
+            p = helper.get_big_prime(kappa)
+            if helper.is_prime((p - 1) // 2):
+                self.modulo = p
                 break
-        print("Generated params!!!")
 
+        assert self.modulo.bit_length() == kappa
+        print("Generated params!!!")
 
 class PublicKey:
     """Public key for the secret sharing scheme."""
@@ -43,14 +47,14 @@ class PrivateKey:
     def __init__(self, params: Params, idx: int):
         """Constructs a new public key with [params] and identifier [idx]."""
 
-        self.exponent = helper.get_random_invertible(1, params.modulo - 1, params.modulo - 1)
+        self.exponent = random.randint(1, params.modulo - 1)
         self.pk = PublicKey(params, idx, pow(params.generator, self.exponent, params.modulo))
 
     def agree(self, pk: PublicKey) -> int:
         """Performs key agreement between this private key and [pk], negating the output depending on the relative order
         of the respective identifiers."""
 
-        if self.pk.idx < pk.idx:
+        if self.pk.idx > pk.idx:
             return pow(pk.value, self.exponent, self.pk.params.modulo)
         else:
             return -pow(pk.value, self.exponent, self.pk.params.modulo)

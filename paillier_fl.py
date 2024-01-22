@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import functools
 import math
-import operator
+import random
 import statistics
 from decimal import *
-from random import randrange
+from random import randrange, sample
 from typing import List, Tuple
 
 import helper
@@ -41,7 +41,7 @@ class Server:
         aggregate = functools.reduce(lambda x, y: (x * y) % (self.pk.n**2), aggregates)
 
         # Ask each client to partially decrypt the aggregate
-        partial_decryptions = dict([client.decrypt_aggregate(aggregate) for client in clients])
+        partial_decryptions = dict([client.decrypt_aggregate(aggregate) for client in random.sample(clients, self.pk.t)])
 
         # Server combines the partial decryptions
         decrypted_sum = Paillier.combine_parts(self.pk, partial_decryptions)

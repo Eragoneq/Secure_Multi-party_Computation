@@ -1,5 +1,6 @@
-import functools
 import math
+import time
+import functools
 import operator
 from typing import Tuple, Dict
 from helper import *
@@ -38,7 +39,7 @@ class PublicKey:
         """Encrypts [m] into a Paillier ciphertext."""
 
         r = get_random_invertible(1, self.n_sq, self.n_sq)
-        c = pow(self.g, m, self.n_sq) * pow(r, self.n, self.n_sq) % self.n_sq
+        c = (pow(self.g, m, self.n_sq) * pow(r, self.n, self.n_sq)) % self.n_sq
         return c
 
 
@@ -87,19 +88,26 @@ class Paillier:
         assert kappa > 0
         assert t <= ell
 
+        print("Generating keys...")
+        start_time = time.time()
+
         p_prime = 0
         q_prime = 0
         p = 0
         q = 0
+        n = 0
 
         # Check p and q are prime
-        while not is_prime(p) and not is_prime(q) and p == q and p_prime == q_prime and p == p_prime and q == q_prime:
-            p_prime = get_big_prime(kappa // 2)
+        while True:
+            p_prime = get_big_prime(kappa // 2 - 1)
             p = 2 * p_prime + 1
-            q_prime = get_big_prime(kappa // 2)
+            q_prime = get_big_prime(kappa // 2 - 1)
             q = 2 * q_prime + 1
+            n = p * q
+            if is_prime(p) and is_prime(q) and p != q and p_prime != q_prime and p != p_prime and q != q_prime and n.bit_length() == kappa:
+                break
 
-        n = p * q
+        assert n.bit_length() == kappa
         m = p_prime * q_prime
 
         d = m * pow(m, -1, n)
@@ -107,17 +115,15 @@ class Paillier:
         assert d % m == 0
         assert d % n == 1
 
-        f = [d] + [randint(1, n * m - 1) for _ in range(t - 1)]
-
-        print(f)
+        f = [d] + [get_random_invertible(1, n * m - 1, n*m) for _ in range(t - 1)]
 
         pub_key = PublicKey(kappa, n, t, ell)
         priv_shares = {}
         for user in range(1, ell + 1):
-            priv_key = PrivateKey(pub_key, user, calculate_poly(f, user) % n * m)
+            priv_key = PrivateKey(pub_key, user, calculate_poly(f, user))
             priv_shares[user] = priv_key
 
-        print(priv_shares)
+        print(f"Generated keys after {time.time() - start_time} seconds!")
 
         return pub_key, priv_shares
 
@@ -135,7 +141,6 @@ class Paillier:
         """
 
         assert len(parts) >= pk.t
-
 
         c_prime = 1
 

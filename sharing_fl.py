@@ -20,6 +20,7 @@ class Server:
         self.params = params
         self.model = Decimal(0)
 
+
     def run_round(self, clients: List[Client]) -> None:
         """Runs a single round of federated learning with [clients]."""
 
@@ -63,6 +64,7 @@ class Client:
         Returns the client's public key.
         """
 
+        # Return the most recent public key
         return self.sk.pk
 
     def train_model(self, server_model: Decimal, pks: List[PublicKey]) -> int:
@@ -71,10 +73,13 @@ class Client:
         clients identified in [pks].
         """
 
-        noise = [self.sk.agree(pk) for pk in pks if pk.idx != self.idx]
+        noise = sum([self.sk.agree(pk) for pk in pks if pk.idx != self.idx])
+
+        # Generate new keys after use
+        self.sk = PrivateKey(self.params, self.idx)
 
         # Send updated model to server
-        return helper.dec2int(self.model + self.learning_rate * (server_model - self.model)) + sum(noise)
+        return helper.dec2int((self.learning_rate * self.model + (1 - self.learning_rate) * server_model)) + noise
 
 
 
@@ -82,7 +87,7 @@ class Client:
 def main() -> None:
     # Parameters
     params: params = Params(256)
-    ell: int = 5
+    ell: int = 10
     rounds: int = 100
     learning_rate: Decimal = Decimal(0.3)
 
